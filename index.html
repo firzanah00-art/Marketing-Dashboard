@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ms"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard Marketing</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#EEF2F4;--sf:#fff;--ink:#16263A;--mu:#5C6B7C;--ln:#D5DDE3;--ac:#1F6F5C;--ai:#fff;--so:#DCEBE6;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0F1A24;--sf:#17252F;--ink:#E6EDF2;--mu:#93A4B3;--ln:#2A3B48;--ac:#5CC2A5;--ai:#0B1F19;--so:#1D3A33;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.45}
+[hidden]{display:none!important}
+#app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+nav{background:var(--sf);border-right:1px solid var(--ln);padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+nav h2{font-size:1rem;margin:0 8px 12px}
+nav button{border:0;background:none;color:var(--mu);font:inherit;font-weight:600;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer}
+nav button[aria-current]{background:var(--ac);color:var(--ai)}
+nav .sp{flex:1}
+main{padding:22px 20px 48px;min-width:0}
+h1{margin:0;font-size:1.7rem;font-weight:800}
+.mu{color:var(--mu);font-size:.85rem;margin:2px 0 14px}
+.kp,.ch{display:grid;gap:10px;margin-bottom:14px}
+.kp{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.ch{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.k,.card{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px}
+.k small{color:var(--mu);display:block}.k b{font-size:1.35rem;font-weight:800}
+.card h3{margin:0 0 10px;font-size:.95rem}
+.r{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;font-size:.82rem;margin:5px 0}
+.r span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr{height:10px;background:var(--so);border-radius:9px;overflow:hidden}.tr i{display:block;height:100%;background:var(--ac)}
+.fl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+input,select{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--ln);background:var(--sf);color:var(--ink)}
+.tw{overflow-x:auto;background:var(--sf);border:1px solid var(--ln);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:.83rem}
+th,td{padding:8px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--ln)}
+th{color:var(--mu);font-size:.72rem;text-transform:uppercase}
+.btn{border:0;background:var(--ac);color:var(--ai);font:inherit;font-weight:600;padding:10px 18px;border-radius:10px;cursor:pointer}
+#auth{max-width:380px;margin:12vh auto;padding:0 16px}
+#auth form{display:grid;gap:8px}
+@media(max-width:760px){#app{grid-template-columns:1fr}nav{position:static;height:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--ln);padding:10px}nav h2,nav .sp{display:none}nav button{white-space:nowrap}}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+</style></head>
+<body>
+<section id="auth" hidden>
+<h1>Log masuk</h1><p class="mu">Dashboard Marketing</p>
+<form id="lf"><input type="email" id="em" placeholder="emel@contoh.com" required><input type="password" id="pw" placeholder="Password" required><button class="btn" type="submit">Log masuk</button></form>
+<p class="mu" id="am"></p>
+</section>
+<div id="app" hidden>
+<nav id="nav"></nav>
+<main><h1 id="ttl"></h1><p class="mu" id="st"></p>
+<div class="kp" id="kp"></div><div class="ch" id="ch"></div><div class="fl" id="fl"></div>
+<div class="tw"><table id="tb"></table></div></main>
+</div>
+<script>
+const sb=supabase.createClient("https://vwlrogostacrrcfncupb.supabase.co","sb_publishable_0Lv6sZ63ZW28sRgs7BiZNA_2ab-Opkk");
+const $=i=>document.getElementById(i),MS="janfebmaraprmayjunjulaugsepoctnovdec";
+const num=s=>parseFloat(String(s==null?"":s).replace(/[^0-9.-]/g,""))||0;
+const rm=n=>"RM"+n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pl=n=>n.toLocaleString("en-MY");
+const mk=s=>{const m=/([A-Za-z]{3})[a-z]*-(\d{4})\s*$/.exec(s||"");if(!m)return null;const i=MS.indexOf(m[1].toLowerCase());return i<0||i%3?null:m[2]+"-"+String(i/3+1).padStart(2,"0")};
+const ml=k=>new Date(+k.slice(0,4),+k.slice(5)-1,1).toLocaleDateString("ms-MY",{month:"short",year:"numeric"});
+const st=r=>/^4/.test(r["SALES STAGE"]||"");
+// c: [tajuk, medan kumpulan, medan nilai (0 = kira bilangan), bulan?, nombor biasa?]
+const T={
+"Estimated Sales":{f:["PRODUCT","SALES STAGE","SERVICE TYPE"],k:[["Jumlah nilai projek","ONE TIME SALE"],["Nilai kontrak","ONE TIME SALE",st]],c:[["Nilai ikut peringkat","SALES STAGE","ONE TIME SALE"],["Nilai ikut produk","PRODUCT","ONE TIME SALE"],["Jangkaan siap ikut bulan","EXPECTED END DATE","ONE TIME SALE",1]]},
+"Current Sales":{f:["_g","SALES STAGE","SERVICE TYPE"],k:[["Jumlah jualan","PROJECT VALUE (RM)"]],c:[["Nilai ikut kumpulan","_g","PROJECT VALUE (RM)"],["Nilai ikut peringkat","SALES STAGE","PROJECT VALUE (RM)"],["Siap ikut bulan","EXPECTED END DATE","PROJECT VALUE (RM)",1]]},
+"Leads List":{f:["PRODUCT","STATUS","AREA"],k:[],c:[["Leads ikut sumber","STATUS"],["Leads ikut produk","PRODUCT"],["Leads ikut bulan","FIRST CONTACT DATE",0,1]]},
+"Campaign & Lead":{f:["_g","PROJECT"],k:[["Jumlah outreach","TOTAL OUTREACH",0,1],["Jumlah leads","TOTAL LEADS",0,1],["Nilai projek","PROJECT VALUE (RM)"]],c:[["Outreach ikut projek","PROJECT","TOTAL OUTREACH",0,1]]},
+"Summary":{kv:1}
+};
+let DB={},cur="Estimated Sales",q="",sel={};
+
+async function load(){
+  let all=[],f=0;
+  for(;;){
+    const {data,error}=await sb.from("sheet_rows").select("tab,row_no,grp,data").order("tab").order("row_no").range(f,f+999);
+    if(error){$("st").textContent="Gagal memuatkan: "+error.message;return}
+    all=all.concat(data);if(data.length<1000)break;f+=1000;
+  }
+  DB={};
+  all.forEach(r=>{const d={};Object.entries(r.data).forEach(([k,v])=>{d[k.trim().toUpperCase()]=v});d._g=r.grp||"";(DB[r.tab]=DB[r.tab]||[]).push(d)});
+  $("st").textContent="Dikemas kini "+new Date().toLocaleTimeString("ms-MY",{hour:"2-digit",minute:"2-digit"})+" (disegarkan setiap minit)";
+}
+function nav(){
+  const n=$("nav");n.innerHTML="<h2>Dashboard Marketing</h2>";
+  Object.keys(T).forEach(t=>{const b=document.createElement("button");b.textContent=t;if(t===cur)b.setAttribute("aria-current","true");b.onclick=()=>{cur=t;q="";sel={};nav();fil();upd()};n.append(b)});
+  const s=document.createElement("div"),o=document.createElement("button");s.className="sp";o.textContent="Log keluar";o.onclick=()=>sb.auth.signOut();n.append(s,o);
+}
+function fil(){
+  const c=T[cur],box=$("fl"),R=DB[cur]||[];box.innerHTML="";if(c.kv)return;
+  const s=document.createElement("input");s.type="text";s.placeholder="Cari...";s.oninput=()=>{q=s.value.toLowerCase();upd()};box.append(s);
+  c.f.forEach(f=>{
+    const e=document.createElement("select"),o0=document.createElement("option");o0.value="";o0.textContent="Semua "+(f==="_g"?"KUMPULAN":f);e.append(o0);
+    [...new Set(R.map(r=>r[f]).filter(Boolean))].sort().forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;e.append(o)});
+    e.onchange=()=>{sel[f]=e.value;upd()};box.append(e);
+  });
+}
+function kpi(l,v){const d=document.createElement("div"),s=document.createElement("small"),b=document.createElement("b");d.className="k";s.textContent=l;b.textContent=v;d.append(s,b);$("kp").append(d)}
+function draw(t,e,fm){
+  const d=document.createElement("section"),h=document.createElement("h3");d.className="card";h.textContent=t;d.append(h);
+  if(!e.length){const p=document.createElement("p");p.className="mu";p.textContent="Tiada data.";d.append(p)}
+  const mx=Math.max(...e.map(x=>x[1]),1);
+  e.forEach(([k,x])=>{
+    const r=document.createElement("div"),a=document.createElement("span"),b=document.createElement("div"),i=document.createElement("i"),c=document.createElement("b");
+    r.className="r";a.textContent=k;a.title=k;b.className="tr";i.style.width=(x/mx*100)+"%";b.append(i);c.textContent=fm(x);r.append(a,b,c);d.append(r);
+  });
+  $("ch").append(d);
+}
+function bars([t,g,v,m,n],F){
+  const o={};
+  F.forEach(r=>{const k=m?mk(r[g]):(r[g]||"(kosong)");if(k)o[k]=(o[k]||0)+(v?num(r[v]):1)});
+  let e=Object.entries(o);
+  e=m?e.sort((a,b)=>a[0]<b[0]?-1:1).map(([k,x])=>[ml(k),x]):e.sort((a,b)=>b[1]-a[1]).slice(0,10);
+  draw(t,e,v&&!n?rm:pl);
+}
+function table(F){
+  const ks=[...new Set(F.flatMap(r=>Object.keys(r)))].filter(k=>k!=="_g"||F.some(r=>r._g));
+  const tb=$("tb"),hr=document.createElement("tr"),body=document.createElement("tbody"),th=document.createElement("thead");
+  ks.forEach(k=>{const e=document.createElement("th");e.textContent=k==="_g"?"KUMPULAN":k;hr.append(e)});th.append(hr);
+  F.slice(0,500).forEach(r=>{const tr=document.createElement("tr");ks.forEach(k=>{const e=document.createElement("td");e.textContent=r[k]||"";tr.append(e)});body.append(tr)});
+  tb.append(th,body);
+}
+function upd(){
+  const c=T[cur],R=DB[cur]||[];
+  $("ttl").textContent=cur;$("kp").innerHTML=$("ch").innerHTML=$("tb").innerHTML="";
+  if(c.kv){
+    R.filter(r=>/^total/i.test(r.LABEL)).forEach(r=>kpi(r.LABEL,/\d/.test(r.VALUE)?r.VALUE:"—"));
+    draw("Hasil ikut bulan",R.filter(r=>!/^total/i.test(r.LABEL)).map(r=>[r.LABEL,num(r.VALUE)]),rm);return;
+  }
+  const F=R.filter(r=>(!q||Object.values(r).some(v=>String(v).toLowerCase().includes(q)))&&Object.keys(sel).every(k=>!sel[k]||r[k]===sel[k]));
+  kpi("Bil. rekod",pl(F.length));
+  c.k.forEach(([l,f,p,n])=>{const s=F.filter(p||(()=>true)).reduce((a,r)=>a+num(r[f]),0);kpi(l,n?pl(s):rm(s))});
+  c.c.forEach(x=>bars(x,F));
+  table(F);
+}
+$("lf").onsubmit=async e=>{
+  e.preventDefault();$("am").textContent="Sila tunggu...";
+  const {error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
+  $("am").textContent=error?"Gagal log masuk: "+error.message:"";
+};
+sb.auth.onAuthStateChange((ev,s)=>{
+  if(s){$("auth").hidden=true;$("app").hidden=false;if(ev==="INITIAL_SESSION"||ev==="SIGNED_IN")setTimeout(async()=>{await load();nav();fil();upd()},0)}
+  else{DB={};$("app").hidden=true;$("auth").hidden=false}
+});
+setInterval(async()=>{if(!$("app").hidden){await load();upd()}},60000);
+</script>
+</body></html>
